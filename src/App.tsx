@@ -1,16 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import { queryClient } from '@/lib/queryClient'
-import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { queryClient } from '@/lib/queryClient'
 
-import { LoginPage } from '@/pages/LoginPage'
 import { DashboardRouter } from '@/pages/DashboardRouter'
+import { LoginPage } from '@/pages/LoginPage'
 import { UnauthorizedPage } from '@/pages/UnauthorizedPage'
+import { GenesisOverview } from '@/pages/genesis/GenesisOverview'
 
 import { env } from '@/lib/env'
+
+function GenesisDashboardPlaceholder() {
+  return <div className="text-gray-500">Em breve</div>
+}
 
 export default function App() {
   return (
@@ -30,14 +36,25 @@ export default function App() {
               }
             />
 
+            {/* Genesis admin routes */}
             <Route
-              path="/dashboard/genesis/*"
+              path="/dashboard/genesis"
               element={
                 <ProtectedRoute allowedRoles={['genesis']}>
-                  <div className="p-8 text-gray-500">Dashboard Genesis — Fase 4</div>
+                  <DashboardLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<GenesisOverview />} />
+              <Route path="organizations" element={<GenesisDashboardPlaceholder />} />
+              <Route path="users" element={<GenesisDashboardPlaceholder />} />
+              <Route path="diagnosis" element={<GenesisDashboardPlaceholder />} />
+              <Route path="action-plans" element={<GenesisDashboardPlaceholder />} />
+              <Route path="crm" element={<GenesisDashboardPlaceholder />} />
+              <Route path="finance" element={<GenesisDashboardPlaceholder />} />
+              <Route path="audit" element={<GenesisDashboardPlaceholder />} />
+            </Route>
+
             <Route
               path="/dashboard/client/*"
               element={

@@ -57,7 +57,7 @@ export function useUpdateActionPlan() {
   return useMutation({
     mutationFn: ({
       id,
-      organizationId,
+      organizationId: _organizationId,
       ...payload
     }: Partial<ActionPlan> & { id: string; organizationId: string }) =>
       actionPlanService.update(id, payload, user!.id),

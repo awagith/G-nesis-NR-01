@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { profileRepository } from '@/repositories/profile.repository'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { profileService } from '@/services/profile.service'
 import type { UserRole } from '@/types'
 
 export const profileKeys = {
@@ -12,7 +12,7 @@ export const profileKeys = {
 export function useProfilesByOrganization(organizationId: string) {
   return useQuery({
     queryKey: profileKeys.byOrg(organizationId),
-    queryFn: () => profileRepository.findByOrganization(organizationId),
+    queryFn: () => profileService.listByOrganization(organizationId),
     enabled: !!organizationId,
     select: r => r.data,
   })
@@ -21,7 +21,7 @@ export function useProfilesByOrganization(organizationId: string) {
 export function useProfile(id: string) {
   return useQuery({
     queryKey: profileKeys.detail(id),
-    queryFn: () => profileRepository.findById(id),
+    queryFn: () => profileService.getById(id),
     enabled: !!id,
     select: r => r.data,
   })
@@ -36,7 +36,7 @@ export function useInviteUser() {
       name: string
       role: UserRole
       organizationId?: string
-    }) => profileRepository.inviteUser(params),
+    }) => profileService.inviteUser(params),
     onSuccess: (_, { organizationId }) => {
       if (organizationId) {
         queryClient.invalidateQueries({ queryKey: profileKeys.byOrg(organizationId) })
@@ -49,13 +49,8 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      avatarUrl,
-    }: {
-      id: string
-      avatarUrl: string
-    }) => profileRepository.updateAvatar(id, avatarUrl),
+    mutationFn: ({ id, avatarUrl }: { id: string; avatarUrl: string }) =>
+      profileService.updateAvatar(id, avatarUrl),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: profileKeys.detail(id) })
     },

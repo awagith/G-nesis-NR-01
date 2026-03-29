@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { financeRepository } from '@/repositories/finance.repository'
-import { crmRepository, contractRepository } from '@/repositories/crm.repository'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { crmService } from '@/services/crm.service'
+import { financeService } from '@/services/finance.service'
 import { useAuth } from '@/hooks/useAuth'
 import type { CrmContact, Contract, FinancialTransaction } from '@/types'
 
-// ─── Finance ──────────────────────────────────────────────────────────────────
+// ─── Finance keys ─────────────────────────────────────────────────────────────
 export const financeKeys = {
   all: ['finance'] as const,
   summary: (from: string, to: string) => [...financeKeys.all, 'summary', from, to] as const,
@@ -15,7 +15,7 @@ export const financeKeys = {
 export function useFinanceSummary(from: string, to: string) {
   return useQuery({
     queryKey: financeKeys.summary(from, to),
-    queryFn: () => financeRepository.getSummary(from, to),
+    queryFn: () => financeService.getSummary(from, to),
     enabled: !!from && !!to,
   })
 }
@@ -23,7 +23,7 @@ export function useFinanceSummary(from: string, to: string) {
 export function useFinanceTransactions(from: string, to: string) {
   return useQuery({
     queryKey: financeKeys.period(from, to),
-    queryFn: () => financeRepository.findByPeriod(from, to),
+    queryFn: () => financeService.listByPeriod(from, to),
     enabled: !!from && !!to,
     select: r => r.data,
   })
@@ -34,16 +34,15 @@ export function useCreateTransaction() {
   const { user } = useAuth()
 
   return useMutation({
-    mutationFn: (
-      payload: Omit<FinancialTransaction, 'id' | 'created_at' | 'created_by'>
-    ) => financeRepository.create({ ...payload, created_by: user!.id }),
+    mutationFn: (payload: Omit<FinancialTransaction, 'id' | 'created_at'>) =>
+      financeService.create(payload, user!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: financeKeys.all })
     },
   })
 }
 
-// ─── CRM ──────────────────────────────────────────────────────────────────────
+// ─── CRM keys ─────────────────────────────────────────────────────────────────
 export const crmKeys = {
   all: ['crm'] as const,
   list: () => [...crmKeys.all, 'list'] as const,
@@ -60,7 +59,7 @@ export const crmKeys = {
 export function useCrmContacts() {
   return useQuery({
     queryKey: crmKeys.list(),
-    queryFn: () => crmRepository.findAll({ orderBy: 'updated_at', orderDir: 'desc' }),
+    queryFn: () => crmService.listAll(),
     select: r => r.data,
   })
 }
@@ -68,17 +67,18 @@ export function useCrmContacts() {
 export function useCrmContactsByStage(stage: CrmContact['stage']) {
   return useQuery({
     queryKey: crmKeys.byStage(stage),
-    queryFn: () => crmRepository.findByStage(stage),
+    queryFn: () => crmService.listByStage(stage),
     select: r => r.data,
   })
 }
 
 export function useCreateCrmContact() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   return useMutation({
     mutationFn: (payload: Omit<CrmContact, 'id' | 'created_at' | 'updated_at'>) =>
-      crmRepository.create(payload),
+      crmService.create(payload, user!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: crmKeys.list() })
     },
@@ -87,10 +87,17 @@ export function useCreateCrmContact() {
 
 export function useUpdateCrmContact() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   return useMutation({
-    mutationFn: ({ id, ...payload }: Partial<CrmContact> & { id: string }) =>
-      crmRepository.update(id, payload),
+    mutationFn: ({
+      id,
+      stage,
+      ...payload
+    }: Partial<CrmContact> & { id: string }) =>
+      stage
+        ? crmService.advanceStage(id, stage, user!.id)
+        : crmService.create({ ...payload, stage: 'lead' } as Omit<CrmContact, 'id' | 'created_at' | 'updated_at'>, user!.id),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: crmKeys.list() })
       queryClient.invalidateQueries({ queryKey: crmKeys.detail(id) })
@@ -101,7 +108,7 @@ export function useUpdateCrmContact() {
 export function useActiveContracts() {
   return useQuery({
     queryKey: crmKeys.contracts.active(),
-    queryFn: () => contractRepository.findActive(),
+    queryFn: () => crmService.listActive(),
     select: r => r.data,
   })
 }
@@ -109,17 +116,18 @@ export function useActiveContracts() {
 export function useExpiringContracts(days = 30) {
   return useQuery({
     queryKey: crmKeys.contracts.expiring(days),
-    queryFn: () => contractRepository.findExpiringSoon(days),
+    queryFn: () => crmService.listExpiringSoon(days),
     select: r => r.data,
   })
 }
 
 export function useCreateContract() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   return useMutation({
     mutationFn: (payload: Omit<Contract, 'id' | 'created_at'>) =>
-      contractRepository.create(payload),
+      crmService.createContract(payload, user!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: crmKeys.contracts.all })
     },

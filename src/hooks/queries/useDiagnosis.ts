@@ -77,7 +77,7 @@ export function useUpdateDiagnosisStatus() {
       status: PsychosocialDiagnosis['status']
       organizationId: string
     }) => diagnosisService.updateStatus(id, status, user!.id).then(r => ({ ...r, organizationId })),
-    onSuccess: (result, { id, organizationId }) => {
+    onSuccess: (_result, { id, organizationId }) => {
       queryClient.invalidateQueries({ queryKey: diagnosisKeys.byOrg(organizationId) })
       queryClient.invalidateQueries({ queryKey: diagnosisKeys.detail(id) })
     },

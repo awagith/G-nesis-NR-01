@@ -60,8 +60,8 @@ export function useUpdateActionPlan() {
       organizationId,
       ...payload
     }: Partial<ActionPlan> & { id: string; organizationId: string }) =>
-      actionPlanService.update(id, payload, user!.id).then(r => ({ ...r, organizationId })),
-    onSuccess: (result, { id, organizationId }) => {
+      actionPlanService.update(id, payload, user!.id),
+    onSuccess: (_result, { id, organizationId }) => {
       queryClient.invalidateQueries({ queryKey: actionPlanKeys.byOrg(organizationId) })
       queryClient.invalidateQueries({ queryKey: actionPlanKeys.detail(id) })
     },

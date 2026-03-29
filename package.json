@@ -11,7 +11,12 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "supabase:setup:dev": "powershell -ExecutionPolicy Bypass -File scripts/setup-dev.ps1",
+    "supabase:setup:staging": "powershell -ExecutionPolicy Bypass -File scripts/setup-staging.ps1",
+    "supabase:setup:prod": "powershell -ExecutionPolicy Bypass -File scripts/setup-prod.ps1",
+    "supabase:gen-types": "powershell -ExecutionPolicy Bypass -File scripts/gen-types.ps1",
+    "supabase:gen-types:staging": "powershell -ExecutionPolicy Bypass -File scripts/gen-types.ps1 -Env staging"
   },
   "dependencies": {
     "@supabase/auth-helpers-react": "^0.15.0",

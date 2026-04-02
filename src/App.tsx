@@ -1,21 +1,22 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { queryClient } from '@/lib/queryClient'
+import { env } from '@/lib/env'
 
-import { DashboardRouter } from '@/pages/DashboardRouter'
+import { Home } from '@/pages/Home'
+import { NotFound } from '@/pages/NotFound'
 import { LoginPage } from '@/pages/LoginPage'
+import { DashboardRouter } from '@/pages/DashboardRouter'
 import { UnauthorizedPage } from '@/pages/UnauthorizedPage'
 import { GenesisOverview } from '@/pages/genesis/GenesisOverview'
 
-import { env } from '@/lib/env'
-
-function GenesisDashboardPlaceholder() {
-  return <div className="text-gray-500">Em breve</div>
+function Placeholder({ label }: { label: string }) {
+  return <div className="p-8 text-sm text-gray-400">{label} — em implementação</div>
 }
 
 export default function App() {
@@ -24,11 +25,14 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Público */}
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
+            {/* Redireciona para dashboard por role */}
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <DashboardRouter />
@@ -36,7 +40,7 @@ export default function App() {
               }
             />
 
-            {/* Genesis admin routes */}
+            {/* Genesis */}
             <Route
               path="/dashboard/genesis"
               element={
@@ -46,41 +50,47 @@ export default function App() {
               }
             >
               <Route index element={<GenesisOverview />} />
-              <Route path="organizations" element={<GenesisDashboardPlaceholder />} />
-              <Route path="users" element={<GenesisDashboardPlaceholder />} />
-              <Route path="diagnosis" element={<GenesisDashboardPlaceholder />} />
-              <Route path="action-plans" element={<GenesisDashboardPlaceholder />} />
-              <Route path="crm" element={<GenesisDashboardPlaceholder />} />
-              <Route path="finance" element={<GenesisDashboardPlaceholder />} />
-              <Route path="audit" element={<GenesisDashboardPlaceholder />} />
+              <Route path="organizations" element={<Placeholder label="Organizações" />} />
+              <Route path="users" element={<Placeholder label="Usuários" />} />
+              <Route path="diagnosis" element={<Placeholder label="Diagnósticos" />} />
+              <Route path="action-plans" element={<Placeholder label="Planos de Ação" />} />
+              <Route path="crm" element={<Placeholder label="CRM" />} />
+              <Route path="finance" element={<Placeholder label="Financeiro" />} />
+              <Route path="audit" element={<Placeholder label="Auditoria" />} />
             </Route>
 
+            {/* Cliente Executivo */}
             <Route
               path="/dashboard/client/*"
               element={
                 <ProtectedRoute allowedRoles={['client_executive']}>
-                  <div className="p-8 text-gray-500">Dashboard Cliente — Fase 4</div>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/collaborator/*"
-              element={
-                <ProtectedRoute allowedRoles={['collaborator']}>
-                  <div className="p-8 text-gray-500">Dashboard Colaborador — Fase 4</div>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/professional/*"
-              element={
-                <ProtectedRoute allowedRoles={['professional']}>
-                  <div className="p-8 text-gray-500">Dashboard Profissional — Fase 4</div>
+                  <Placeholder label="Dashboard Cliente" />
                 </ProtectedRoute>
               }
             />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Colaborador */}
+            <Route
+              path="/dashboard/collaborator/*"
+              element={
+                <ProtectedRoute allowedRoles={['collaborator']}>
+                  <Placeholder label="Dashboard Colaborador" />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Profissional */}
+            <Route
+              path="/dashboard/professional/*"
+              element={
+                <ProtectedRoute allowedRoles={['professional']}>
+                  <Placeholder label="Dashboard Profissional" />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

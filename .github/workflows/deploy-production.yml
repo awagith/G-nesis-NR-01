@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy para Produção (Vercel)
+    name: Build e deploy para portal.genesis360care.com.br
     runs-on: ubuntu-latest
 
     steps:
@@ -22,20 +22,29 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Build production
+      - name: Build produção
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
           VITE_APP_ENV: production
           VITE_APP_NAME: 'Gênesis NR-01'
-          VITE_APP_URL: ${{ secrets.PROD_APP_URL }}
+          VITE_APP_URL: 'https://portal.genesis360care.com.br'
 
-      - name: Deploy para Vercel (Production)
-        uses: amondnet/vercel-action@v25
+      - name: Deploy via rsync para o servidor
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./
+          switches: -avzr --delete
+          path: dist/
+          remote_path: /var/www/portal.genesis360care.com.br/
+          remote_host: ${{ secrets.PROD_SERVER_HOST }}
+          remote_user: ${{ secrets.PROD_SERVER_USER }}
+          remote_key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+
+      - name: Recarregar Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: sudo systemctl reload nginx

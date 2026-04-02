@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy para Staging (Vercel)
+    name: Build e deploy para staging
     runs-on: ubuntu-latest
 
     steps:
@@ -31,11 +31,20 @@ jobs:
           VITE_APP_NAME: 'Gênesis NR-01 [STAGING]'
           VITE_APP_URL: ${{ secrets.STAGING_APP_URL }}
 
-      - name: Deploy para Vercel (Staging)
-        uses: amondnet/vercel-action@v25
+      - name: Deploy via rsync para staging
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-          alias-domains: staging.seudominio.com.br
+          switches: -avzr --delete
+          path: dist/
+          remote_path: ${{ secrets.STAGING_SERVER_PATH }}
+          remote_host: ${{ secrets.PROD_SERVER_HOST }}
+          remote_user: ${{ secrets.PROD_SERVER_USER }}
+          remote_key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+
+      - name: Recarregar Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: sudo systemctl reload nginx

@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setSession(session)
             setUser(session?.user ?? null)
-            setIsLoading(false)
+            setIsLoading(false) // desbloqueia UI antes de buscar o perfil
             if (session?.user) {
                 const p = await fetchProfile(session.user.id)
                 setProfile(p)
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 setSession(session)
                 setUser(session?.user ?? null)
-                setIsLoading(false)
+                setIsLoading(false) // desbloqueia UI antes de buscar o perfil
                 if (session?.user) {
                     const p = await fetchProfile(session.user.id)
                     setProfile(p)

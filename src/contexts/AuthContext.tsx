@@ -102,9 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signIn = useCallback(async (email: string, password: string) => {
         setIsLoading(true)
-        const normalizedEmail = email.trim().toLowerCase()
         const { error } = await supabase.auth.signInWithPassword({
-            email: normalizedEmail,
+            email: email.trim().toLowerCase(),
             password,
         })
         setIsLoading(false)

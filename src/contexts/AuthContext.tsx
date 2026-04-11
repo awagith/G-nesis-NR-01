@@ -35,32 +35,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [user, fetchProfile])
 
     useEffect(() => {
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
+        // Timeout de segurança: se getSession() não responder em 15s, mostra o formulário de login
+        const safetyTimeout = setTimeout(() => {
+            setIsLoading(false)
+            setSession(null)
+            setUser(null)
+            setProfile(null)
+        }, 15000)
+
+        supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+            clearTimeout(safetyTimeout)
+
+            if (error) {
+                // Refresh token expirado/inválido — limpa sessão corrompida do localStorage
+                console.warn('[Auth] Sessão inválida, limpando:', error.message)
+                await supabase.auth.signOut()
+                setSession(null)
+                setUser(null)
+                setProfile(null)
+                setIsLoading(false)
+                return
+            }
+
             setSession(session)
             setUser(session?.user ?? null)
-            if (session?.user) setProfile(await fetchProfile(session.user.id))
+            setIsLoading(false)
+            if (session?.user) {
+                const p = await fetchProfile(session.user.id)
+                setProfile(p)
+            }
+        }).catch(async () => {
+            clearTimeout(safetyTimeout)
+            await supabase.auth.signOut()
+            setSession(null)
+            setUser(null)
+            setProfile(null)
             setIsLoading(false)
         })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
+            async (event, session) => {
+                clearTimeout(safetyTimeout)
+
+                if (event === 'SIGNED_OUT') {
+                    setSession(null)
+                    setUser(null)
+                    setProfile(null)
+                    setIsLoading(false)
+                    return
+                }
+
                 setSession(session)
                 setUser(session?.user ?? null)
+                setIsLoading(false)
                 if (session?.user) {
-                    setProfile(await fetchProfile(session.user.id))
+                    const p = await fetchProfile(session.user.id)
+                    setProfile(p)
                 } else {
                     setProfile(null)
                 }
-                setIsLoading(false)
             }
         )
 
-        return () => subscription.unsubscribe()
+        return () => { clearTimeout(safetyTimeout); subscription.unsubscribe() }
     }, [fetchProfile])
 
     const signIn = useCallback(async (email: string, password: string) => {
         setIsLoading(true)
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const normalizedEmail = email.trim().toLowerCase()
+        const { error } = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+        })
         setIsLoading(false)
         if (error) return { error: error.message }
         return { error: null }
